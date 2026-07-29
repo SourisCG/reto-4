@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Calculadora básica creada con HTML, CSS y JavaScript">
+  <title>Calculadora básica</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="pagina-principal">
+    <section class="calculadora" aria-labelledby="titulo-calculadora">
+      <header class="encabezado">
+        <p class="etiqueta">Reto 4</p>
+        <h1 id="titulo-calculadora">Calculadora básica</h1>
+        <p class="subtitulo">Operaciones sencillas con JavaScript</p>
+      </header>
+
+      <div class="pantalla-contenedor">
+        <span class="pantalla-etiqueta">Operación actual</span>
+        <output id="operacion" class="operacion-actual" aria-live="polite">Listo para comenzar</output>
+        <output id="pantalla" class="pantalla" aria-live="polite">0</output>
+      </div>
+
+      <div class="teclado" aria-label="Teclado de la calculadora">
+        <button class="boton boton-limpiar" type="button" data-action="clear">C</button>
+        <button class="boton boton-operacion" type="button" data-operation="/" aria-label="Dividir">÷</button>
+        <button class="boton boton-operacion" type="button" data-operation="*" aria-label="Multiplicar">×</button>
+        <button class="boton boton-operacion" type="button" data-operation="-" aria-label="Restar">−</button>
+
+        <button class="boton" type="button" data-number="7">7</button>
+        <button class="boton" type="button" data-number="8">8</button>
+        <button class="boton" type="button" data-number="9">9</button>
+        <button class="boton boton-operacion" type="button" data-operation="+" aria-label="Sumar">+</button>
+
+        <button class="boton" type="button" data-number="4">4</button>
+        <button class="boton" type="button" data-number="5">5</button>
+        <button class="boton" type="button" data-number="6">6</button>
+        <button class="boton boton-igual" type="button" data-action="equals" aria-label="Obtener resultado">=</button>
+
+        <button class="boton" type="button" data-number="1">1</button>
+        <button class="boton" type="button" data-number="2">2</button>
+        <button class="boton" type="button" data-number="3">3</button>
+
+        <button class="boton boton-cero" type="button" data-number="0">0</button>
+      </div>
+
+      <p class="instruccion">Selecciona los números y la operación que deseas realizar.</p>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
