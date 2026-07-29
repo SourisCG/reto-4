@@ -12,9 +12,8 @@ const simbolosOperacion = {
 const estado = {
   valorMostrado: "0",
   expresion: "",
-  primerOperando: null,
-  operacion: null,
-  esperandoSegundoOperando: false,
+  tokens: [],
+  numeroActual: "",
   resultadoMostrado: false,
   tieneError: false
 };
@@ -27,9 +26,8 @@ function actualizarPantalla() {
 function reiniciarEstado() {
   estado.valorMostrado = "0";
   estado.expresion = "";
-  estado.primerOperando = null;
-  estado.operacion = null;
-  estado.esperandoSegundoOperando = false;
+  estado.tokens = [];
+  estado.numeroActual = "";
   estado.resultadoMostrado = false;
   estado.tieneError = false;
 }
@@ -37,9 +35,8 @@ function reiniciarEstado() {
 function prepararNuevoNumero() {
   estado.valorMostrado = "0";
   estado.expresion = "";
-  estado.primerOperando = null;
-  estado.operacion = null;
-  estado.esperandoSegundoOperando = false;
+  estado.tokens = [];
+  estado.numeroActual = "";
   estado.resultadoMostrado = false;
   estado.tieneError = false;
 }
@@ -49,39 +46,14 @@ function introducirNumero(numero) {
     prepararNuevoNumero();
   }
 
-  if (estado.esperandoSegundoOperando) {
-    estado.valorMostrado = numero;
-    estado.expresion += numero;
-    estado.esperandoSegundoOperando = false;
-  } else if (estado.valorMostrado === "0") {
-    estado.valorMostrado = numero;
-
-    if (!estado.expresion) {
-      estado.expresion = numero;
-    } else if (!estado.expresion.endsWith(` ${numero}`)) {
-      estado.expresion = `${estado.expresion.slice(0, -1)}${numero}`;
-    }
+  if (estado.numeroActual === "0") {
+    estado.numeroActual = numero;
   } else {
-    estado.valorMostrado += numero;
-    estado.expresion += numero;
+    estado.numeroActual += numero;
   }
 
-  actualizarPantalla();
-}
-
-function realizarOperacion(primerOperando, segundoOperando, operacion) {
-  switch (operacion) {
-    case "+":
-      return primerOperando + segundoOperando;
-    case "-":
-      return primerOperando - segundoOperando;
-    case "*":
-      return primerOperando * segundoOperando;
-    case "/":
-      return segundoOperando === 0 ? null : primerOperando / segundoOperando;
-    default:
-      return segundoOperando;
-  }
+  estado.valorMostrado = estado.numeroActual;
+  actualizarExpresion();
 }
 
 function guardarOperacion(operacion) {
@@ -89,53 +61,119 @@ function guardarOperacion(operacion) {
     return;
   }
 
-  const valorActual = Number(estado.valorMostrado);
-  const simbolo = simbolosOperacion[operacion];
-
-  if (estado.primerOperando === null) {
-    estado.primerOperando = valorActual;
-    estado.expresion = `${formatearResultado(valorActual)} ${simbolo} `;
-  } else if (estado.operacion && !estado.esperandoSegundoOperando) {
-    const resultado = realizarOperacion(estado.primerOperando, valorActual, estado.operacion);
-
-    if (resultado === null) {
-      mostrarError();
-      return;
-    }
-
-    estado.valorMostrado = formatearResultado(resultado);
-    estado.primerOperando = resultado;
-    estado.expresion += ` ${simbolo} `;
-  } else if (estado.esperandoSegundoOperando) {
-    estado.expresion = estado.expresion.replace(/[+−×÷] $/, `${simbolo} `);
+  if (estado.resultadoMostrado) {
+    estado.tokens = [Number(estado.valorMostrado)];
+    estado.numeroActual = estado.valorMostrado;
+    estado.expresion = estado.valorMostrado;
+    estado.resultadoMostrado = false;
   }
 
-  estado.operacion = operacion;
-  estado.esperandoSegundoOperando = true;
-  estado.resultadoMostrado = false;
-  actualizarPantalla();
+  if (estado.numeroActual !== "") {
+    estado.tokens.push(Number(estado.numeroActual));
+    estado.numeroActual = "";
+  }
+
+  if (estado.tokens.length === 0) {
+    estado.tokens.push(0);
+  }
+
+  const ultimoToken = estado.tokens[estado.tokens.length - 1];
+
+  if (esOperador(ultimoToken)) {
+    estado.tokens[estado.tokens.length - 1] = operacion;
+  } else {
+    estado.tokens.push(operacion);
+  }
+
+  actualizarExpresion();
 }
 
 function mostrarResultado() {
-  if (estado.tieneError || estado.primerOperando === null || !estado.operacion || estado.esperandoSegundoOperando) {
+  const tokensParaCalcular = [...estado.tokens];
+
+  if (estado.numeroActual !== "") {
+    tokensParaCalcular.push(Number(estado.numeroActual));
+  }
+
+  if (tokensParaCalcular.length < 3 || esOperador(tokensParaCalcular.at(-1))) {
     return;
   }
 
-  const segundoOperando = Number(estado.valorMostrado);
-  const resultado = realizarOperacion(estado.primerOperando, segundoOperando, estado.operacion);
+  const expresionCompleta = renderizarTokens(tokensParaCalcular);
+  const resultado = evaluarExpresion(tokensParaCalcular);
 
   if (resultado === null) {
-    mostrarError();
+    mostrarError(`${expresionCompleta} = Error`);
     return;
   }
 
   estado.valorMostrado = formatearResultado(resultado);
-  estado.expresion = `${estado.expresion} =`;
-  estado.primerOperando = null;
-  estado.operacion = null;
-  estado.esperandoSegundoOperando = false;
+  estado.expresion = `${expresionCompleta} =`;
+  estado.tokens = [];
+  estado.numeroActual = estado.valorMostrado;
   estado.resultadoMostrado = true;
   actualizarPantalla();
+}
+
+function evaluarExpresion(tokens) {
+  const valores = [...tokens];
+
+  for (let indice = 1; indice < valores.length - 1; indice += 2) {
+    const operacion = valores[indice];
+
+    if (operacion !== "*" && operacion !== "/") {
+      continue;
+    }
+
+    const primerOperando = valores[indice - 1];
+    const segundoOperando = valores[indice + 1];
+
+    if (operacion === "/" && segundoOperando === 0) {
+      return null;
+    }
+
+    const resultado = operacion === "*"
+      ? primerOperando * segundoOperando
+      : primerOperando / segundoOperando;
+
+    valores.splice(indice - 1, 3, resultado);
+    indice -= 2;
+  }
+
+  let resultado = valores[0];
+
+  for (let indice = 1; indice < valores.length; indice += 2) {
+    resultado = valores[indice] === "+"
+      ? resultado + valores[indice + 1]
+      : resultado - valores[indice + 1];
+  }
+
+  return resultado;
+}
+
+function actualizarExpresion() {
+  const tokensVisibles = [...estado.tokens];
+
+  if (estado.numeroActual !== "") {
+    tokensVisibles.push(Number(estado.numeroActual));
+  }
+
+  estado.expresion = renderizarTokens(tokensVisibles);
+  actualizarPantalla();
+}
+
+function renderizarTokens(tokens) {
+  return tokens.map((token) => {
+    if (typeof token === "number") {
+      return formatearResultado(token);
+    }
+
+    return simbolosOperacion[token];
+  }).join(" ");
+}
+
+function esOperador(token) {
+  return typeof token === "string";
 }
 
 function formatearResultado(resultado) {
@@ -146,12 +184,11 @@ function formatearResultado(resultado) {
   return String(Number(resultado.toFixed(10)));
 }
 
-function mostrarError() {
+function mostrarError(expresion) {
   estado.valorMostrado = "No se puede dividir entre 0";
-  estado.expresion = `${estado.expresion} = Error`;
-  estado.primerOperando = null;
-  estado.operacion = null;
-  estado.esperandoSegundoOperando = false;
+  estado.expresion = expresion;
+  estado.tokens = [];
+  estado.numeroActual = "";
   estado.resultadoMostrado = false;
   estado.tieneError = true;
   actualizarPantalla();
